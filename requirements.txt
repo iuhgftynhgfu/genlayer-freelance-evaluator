@@ -1,0 +1,10 @@
+# Development tooling for the TaskEvaluator intelligent contract.
+#
+#   pip install -r requirements.txt
+#
+# genlayer-test  -> direct-mode + Studio-mode test suite for intelligent contracts
+# genvm-linter   -> static analysis (lint + SDK validation) for intelligent contracts
+genlayer-test @ git+https://github.com/genlayerlabs/genlayer-testing-suite@v0.29.2
+genvm-linter @ git+https://github.com/genlayerlabs/genvm-linter@main
+requests>=2.31.0
+python-dotenv>=1.0.1

@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AI-driven decentralized freelance task and submission evaluator built with GenLayer Intelligent Contracts."
+    />
+    <title>Freelance Evaluator — GenLayer Intelligent Contract</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1020'/%3E%3Cpath d='M18 42l9-20 5 12 4-8 10 16z' fill='none' stroke='%237c5cff' stroke-width='4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <span class="orb orb-a"></span>
+      <span class="orb orb-b"></span>
+      <span class="orb orb-c"></span>
+      <span class="grid-overlay"></span>
+    </div>
+
+    <header class="topbar">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" width="26" height="26">
+            <path
+              d="M16 44l10-22 6 13 5-9 11 18z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="5"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>Freelance Evaluator</strong>
+          <small>GenLayer Intelligent Contract</small>
+        </span>
+      </a>
+
+      <div class="topbar-actions">
+        <span class="network-pill" title="Active GenLayer network">
+          <span class="pulse-dot"></span>
+          <span id="network-label">studionet</span>
+        </span>
+        <button class="btn btn-ghost" id="settings-btn" type="button" title="Contract settings">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3.2" />
+            <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5" stroke-linecap="round" />
+          </svg>
+          <span class="hide-sm">Settings</span>
+        </button>
+        <button class="btn btn-primary" id="wallet-btn" type="button">Connect wallet</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- ------------------------------------------------------------------ -->
+      <!-- Hero                                                                -->
+      <!-- ------------------------------------------------------------------ -->
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">AI consensus for freelance work</span>
+          <h1>
+            Fair verdicts.<br />
+            <span class="gradient-text">No middleman.</span>
+          </h1>
+          <p>
+            Clients post a brief, freelancers deliver, and a validator set of LLMs grades the
+            work against the requirements. Scores and pass/fail verdicts are written to the
+            GenLayer chain by consensus &mdash; no single model, judge or platform decides.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-lg" id="hero-create" type="button">Create a task</button>
+            <button class="btn btn-outline btn-lg" id="hero-submit" type="button">Submit work</button>
+          </div>
+          <dl class="hero-stats">
+            <div>
+              <dt id="stat-tasks">&mdash;</dt>
+              <dd>Tasks published</dd>
+            </div>
+            <div>
+              <dt id="stat-submissions">&mdash;</dt>
+              <dd>Submissions graded</dd>
+            </div>
+            <div>
+              <dt id="stat-threshold">&mdash;</dt>
+              <dd>Pass threshold</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="hero-card">
+          <div class="flow">
+            <div class="flow-step">
+              <span class="flow-index">01</span>
+              <div>
+                <strong>Client publishes a brief</strong>
+                <p>Requirements are hashed into a task on chain and become immutable.</p>
+              </div>
+            </div>
+            <div class="flow-line" aria-hidden="true"></div>
+            <div class="flow-step">
+              <span class="flow-index">02</span>
+              <div>
+                <strong>Freelancer delivers</strong>
+                <p>Text or a link. The contract stores it exactly as submitted.</p>
+              </div>
+            </div>
+            <div class="flow-line" aria-hidden="true"></div>
+            <div class="flow-step">
+              <span class="flow-index">03</span>
+              <div>
+                <strong>Validators grade the work</strong>
+                <p>A leader LLM scores it; every validator repeats the review independently.</p>
+              </div>
+            </div>
+            <div class="flow-line" aria-hidden="true"></div>
+            <div class="flow-step flow-step-accent">
+              <span class="flow-index">04</span>
+              <div>
+                <strong>Consensus writes the verdict</strong>
+                <p>Score, pass/fail and rubric land on chain only when the network agrees.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------------------ -->
+      <!-- Setup banner                                                        -->
+      <!-- ------------------------------------------------------------------ -->
+      <section class="setup-banner" id="setup-banner" hidden>
+        <div class="setup-text">
+          <h2>Connect the contract</h2>
+          <p>
+            Paste the address of the deployed <code>TaskEvaluator</code> intelligent contract to
+            start reading tasks and submitting work.
+          </p>
+        </div>
+        <div class="setup-form">
+          <input
+            type="text"
+            id="setup-address"
+            class="input mono"
+            placeholder="0x..."
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <button class="btn btn-primary" id="setup-save" type="button">Save address</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------------------ -->
+      <!-- Workspace                                                           -->
+      <!-- ------------------------------------------------------------------ -->
+      <section class="workspace">
+        <div class="panel panel-forms">
+          <div class="tabs" role="tablist" aria-label="Workflow">
+            <button class="tab is-active" id="tab-create" type="button" role="tab" aria-selected="true" data-tab="create">
+              <span class="tab-step">1</span> Client
+            </button>
+            <button class="tab" id="tab-submit" type="button" role="tab" aria-selected="false" data-tab="submit">
+              <span class="tab-step">2</span> Freelancer
+            </button>
+            <button class="tab" id="tab-evaluate" type="button" role="tab" aria-selected="false" data-tab="evaluate">
+              <span class="tab-step">3</span> Verdict
+            </button>
+          </div>
+
+          <!-- Create -->
+          <form class="tab-panel is-active" id="panel-create" role="tabpanel" novalidate>
+            <header class="panel-head">
+              <h3>Publish a task</h3>
+              <p>Describe exactly what you expect. This text is the rubric the AI grades against.</p>
+            </header>
+
+            <label class="field">
+              <span class="field-label">Task title</span>
+              <input
+                class="input"
+                id="task-title"
+                type="text"
+                maxlength="160"
+                placeholder="Build a responsive pricing page"
+                required
+              />
+              <span class="field-hint">Short and specific works best.</span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Requirements</span>
+              <textarea
+                class="input textarea"
+                id="task-requirements"
+                rows="7"
+                maxlength="8000"
+                placeholder="Describe the deliverables, the tech stack, the acceptance criteria, and anything that must NOT be included."
+                required
+              ></textarea>
+              <span class="field-hint">
+                Minimum 10 characters. Requirements cannot be changed after publishing.
+              </span>
+            </label>
+
+            <div class="field-row">
+              <button class="btn btn-primary btn-block" id="create-task" type="submit">Publish task</button>
+            </div>
+            <p class="form-note" id="create-note">
+              Requires a connected wallet. The task id is returned by the contract.
+            </p>
+          </form>
+
+          <!-- Submit -->
+          <form class="tab-panel" id="panel-submit" role="tabpanel" novalidate>
+            <header class="panel-head">
+              <h3>Submit your work</h3>
+              <p>Send the deliverable as text, or paste a public URL. URLs are fetched at evaluation time.</p>
+            </header>
+
+            <label class="field">
+              <span class="field-label">Task id</span>
+              <input
+                class="input mono"
+                id="submit-task-id"
+                type="text"
+                placeholder="task-000001"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <span class="field-hint">Copy the id from a published task or the task list below.</span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Submission content or link</span>
+              <textarea
+                class="input textarea"
+                id="submit-content"
+                rows="8"
+                maxlength="12000"
+                placeholder="Paste your deliverable here, or a public link such as https://github.com/you/project"
+                required
+              ></textarea>
+              <span class="field-hint">
+                One submission per freelancer per task. Submissions are final.
+              </span>
+            </label>
+
+            <div class="field-row">
+              <button class="btn btn-primary btn-block" id="submit-work" type="submit">Submit work</button>
+            </div>
+            <p class="form-note">Requires a connected wallet.</p>
+          </form>
+
+          <!-- Evaluate -->
+          <form class="tab-panel" id="panel-evaluate" role="tabpanel" novalidate>
+            <header class="panel-head">
+              <h3>Trigger a verdict</h3>
+              <p>
+                The client or the freelancer can request the AI review. Validators independently
+                re-grade the work before anything is written on chain.
+              </p>
+            </header>
+
+            <label class="field">
+              <span class="field-label">Submission id</span>
+              <input
+                class="input mono"
+                id="evaluate-submission-id"
+                type="text"
+                placeholder="sub-000001"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <span class="field-hint">You can also press “Evaluate” on a submission card.</span>
+            </label>
+
+            <div class="field-row">
+              <button class="btn btn-primary btn-block" id="evaluate-submission" type="submit">
+                Run AI evaluation
+              </button>
+            </div>
+            <p class="form-note" id="evaluate-note">
+              LLM consensus usually takes 10&ndash;60 seconds. Do not close the tab.
+            </p>
+          </form>
+        </div>
+
+        <div class="panel panel-task">
+          <header class="panel-head panel-head-row">
+            <div>
+              <h3>Task inspector</h3>
+              <p>Load a task to see its brief and every graded submission.</p>
+            </div>
+            <div class="inspector-actions">
+              <input
+                class="input input-sm mono"
+                id="inspect-task-id"
+                type="text"
+                placeholder="task-000001"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="btn btn-outline btn-sm" id="load-task" type="button">Load</button>
+            </div>
+          </header>
+
+          <div class="inspector" id="inspector">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M4 5.5h16M4 12h10M4 18.5h7" stroke-linecap="round" />
+                </svg>
+              </div>
+              <p>No task loaded yet.</p>
+              <span>Publish a task, pick one from the list, or enter a task id above.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------------------ -->
+      <!-- Recent tasks                                                        -->
+      <!-- ------------------------------------------------------------------ -->
+      <section class="panel panel-recent">
+        <header class="panel-head panel-head-row">
+          <div>
+            <h3>Recent tasks on chain</h3>
+            <p>Published briefs, newest first.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="refresh-tasks" type="button">Refresh</button>
+        </header>
+        <div class="task-grid" id="recent-tasks">
+          <p class="muted">Connect a contract address to list tasks.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div>
+          <strong>GenLayer Freelance Evaluator</strong>
+          <p>
+            Intelligent Contract written in Python with the GenLayer SDK. Open source, MIT
+            licensed.
+          </p>
+        </div>
+        <div class="footer-meta">
+          <span>Contract</span>
+          <code id="footer-address" class="mono">not configured</code>
+        </div>
+        <div class="footer-meta">
+          <span>Network</span>
+          <code id="footer-network" class="mono">studionet</code>
+        </div>
+      </div>
+    </footer>
+
+    <!-- -------------------------------------------------------------------- -->
+    <!-- Wallet dialog                                                         -->
+    <!-- -------------------------------------------------------------------- -->
+    <dialog class="modal" id="wallet-dialog">
+      <div class="modal-head">
+        <h3 id="wallet-dialog-title">Connect a signer</h3>
+        <button class="icon-btn" id="wallet-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="wallet-disconnected">
+        <p class="modal-lead">
+          A signer is required to publish tasks, submit work and request verdicts. Reading is
+          always free and needs no wallet.
+        </p>
+        <button class="option-card" id="connect-injected" type="button">
+          <span class="option-title">Browser wallet</span>
+          <span class="option-desc">MetaMask or any EIP-1193 provider. Recommended.</span>
+        </button>
+        <button class="option-card" id="connect-burner" type="button">
+          <span class="option-title">Studio test account</span>
+          <span class="option-desc">
+            Generates an ephemeral key in memory for local Studio testing. Never use it for real
+            funds.
+          </span>
+        </button>
+      </div>
+
+      <div id="wallet-connected" hidden>
+        <p class="modal-lead">You are connected as</p>
+        <code class="address-box mono" id="wallet-address">&mdash;</code>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="copy-address" type="button">Copy address</button>
+          <button class="btn btn-ghost" id="disconnect" type="button">Disconnect</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- -------------------------------------------------------------------- -->
+    <!-- Settings dialog                                                       -->
+    <!-- -------------------------------------------------------------------- -->
+    <dialog class="modal" id="settings-dialog">
+      <div class="modal-head">
+        <h3>Contract settings</h3>
+        <button class="icon-btn" id="settings-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <p class="modal-lead">
+        The address is stored in your browser only. It is never sent anywhere except to the
+        GenLayer RPC you selected.
+      </p>
+      <label class="field">
+        <span class="field-label">TaskEvaluator contract address</span>
+        <input class="input mono" id="settings-address" type="text" placeholder="0x..." spellcheck="false" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span class="field-label">RPC endpoint (optional)</span>
+        <input class="input mono" id="settings-rpc" type="text" placeholder="https://studio.genlayer.com/api" spellcheck="false" autocomplete="off" />
+        <span class="field-hint">
+          Leave empty to use the official endpoint for the selected network.
+        </span>
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="settings-save" type="button">Save</button>
+      </div>
+    </dialog>
+
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

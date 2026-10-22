@@ -1,0 +1,18 @@
+[project]
+name = "genlayer-freelance-evaluator"
+version = "1.0.0"
+description = "AI-driven decentralized freelance task and submission evaluator built with GenLayer Intelligent Contracts"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "direct: tests that execute the contract in-process (no Studio required)",
+    "integration: tests that require a running GenLayer Studio",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

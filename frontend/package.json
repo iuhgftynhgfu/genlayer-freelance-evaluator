@@ -1,0 +1,19 @@
+{
+  "name": "genlayer-freelance-evaluator-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web frontend for the GenLayer Freelance Task & Submission Evaluator intelligent contract",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "genlayer-js": "^1.1.8"
+  },
+  "devDependencies": {
+    "vite": "^7.1.5"
+  }
+}

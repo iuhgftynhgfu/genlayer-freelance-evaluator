@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Lint & test the intelligent contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install genvm-linter
+          pip install "genlayer-test @ git+https://github.com/genlayerlabs/genlayer-testing-suite@v0.29.2"
+
+      - name: Lint and validate the contract
+        run: genvm-lint check contracts/task_evaluator.py
+
+      - name: Run direct-mode tests
+        run: pytest tests/direct -q
+
+  frontend:
+    name: Build the frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build
+        run: npm run build
