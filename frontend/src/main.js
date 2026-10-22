@@ -132,9 +132,7 @@ function requireWallet() {
 
 function renderWalletState() {
   const connected = isConnected();
-  elements.walletBtn.textContent = connected
-    ? shortAddress(typeof window !== "undefined" && connected ? String(currentAddress()) : "")
-    : "Connect wallet";
+  elements.walletBtn.textContent = connected ? shortAddress(currentAddress()) : "Connect wallet";
   elements.walletBtn.classList.toggle("btn-primary", !connected);
   elements.walletBtn.classList.toggle("btn-outline", connected);
 
@@ -565,19 +563,22 @@ function bindEvents() {
     elements.submitTaskId.focus();
   });
 
-  elements.createTask.addEventListener("click", (event) => {
+  elements.panels.create.addEventListener("submit", (event) => {
     event.preventDefault();
     createTask(elements.createTask);
   });
 
-  elements.submitWork.addEventListener("click", (event) => {
+  elements.panels.submit.addEventListener("submit", (event) => {
     event.preventDefault();
     submitWork(elements.submitWork);
   });
 
-  elements.evaluateSubmission.addEventListener("click", (event) => {
+  elements.panels.evaluate.addEventListener("submit", (event) => {
     event.preventDefault();
-    evaluateSubmission(elements.evaluateSubmissionId.value.trim(), elements.evaluateSubmission);
+    evaluateSubmission(
+      elements.evaluateSubmissionId.value.trim(),
+      elements.evaluateSubmission,
+    );
   });
 
   elements.loadTask.addEventListener("click", () => {
