@@ -8,6 +8,11 @@
 **An AI-driven, decentralized freelance task and submission evaluator built with
 [GenLayer Intelligent Contracts](https://docs.genlayer.com/developers/intelligent-contracts/introduction).**
 
+**Version 2.0.0** — submissions can now be revised, verdicts appealed once on
+chain, rubrics configured per task, and validators also bind the criteria-met
+count. See [DIFF.md](DIFF.md) for the full v1 → v2.0.0 changelog and
+[ONCHAIN_PROOF.md](ONCHAIN_PROOF.md) for the live deployment.
+
 Clients publish a brief, freelancers deliver the work, and a *validator set of LLMs*
 grades the delivery against the brief. The score, the pass/fail verdict and the
 per-requirement rubric are written on chain **only when the GenLayer network reaches
@@ -61,7 +66,7 @@ flowchart LR
 
 | Actor | Action | Contract method |
 | :--- | :--- | :--- |
-| **Client** | Publishes a brief with acceptance criteria | `create_task(title, requirements)` |
+| **Client** | Publishes a brief with acceptance criteria | `create_task(title, requirements, rubric_weights="")` |
 | **Freelancer** | Delivers the work (text or a public link) | `submit_work(task_id, content)` |
 | **Client / Freelancer** | Triggers the AI review | `evaluate_submission(submission_id)` |
 
@@ -81,7 +86,8 @@ when a supermajority of validators agree with it.
    answer with the leader's answer:
    - the **pass/fail decision** (score ≥ 70) must be identical,
    - the **scores** must be within **10 points** of each other,
-   - a **hard zero** must be agreed on by both sides.
+   - a **hard zero** must be agreed on by both sides,
+   - (v2.0.0) the **criteria-met counts** must agree within **1** — a leader can no longer claim a passing score while its own rubric says most requirements failed.
 5. Only when the validators agree is the result written to the contract storage,
    where anyone can read it.
 
@@ -142,6 +148,9 @@ Why this matters:
   ignores the wording of the summary and the rubric notes.
 * **Deterministic outcomes.** The contract stores the final score, the verdict and
   the rubric, so any client can verify the result without re-running the model.
+* **v2.0.0: the validator also binds the criteria-met count.** The leader's and the
+  validator's counts of met requirements must agree within 1, so a high score
+  cannot contradict the rubric itself.
 
 ### Why GenLayer for this use case
 
@@ -170,6 +179,10 @@ The LLM is asked to grade the submission on a 100-point rubric:
   never return "passed" for a 20/100 submission.
 * The model also returns a `criteria` checklist (one entry per requirement with a
   `met` flag and a note) that is stored and rendered in the UI.
+* **v2.0.0: per-task rubrics.** `create_task` accepts an optional `rubric_weights`
+  JSON with exactly the four keys `coverage`, `correctness`, `completeness`,
+  `clarity` (integer weights 0–100, summing to exactly 100). A task without one
+  keeps the default 40/30/20/10 split above.
 
 ---
 
@@ -189,7 +202,10 @@ genlayer-freelance-evaluator/
 │       ├── genlayer.js         # genlayer-js wrapper (reads, writes, wallet)
 │       ├── ui.js               # Toasts, formatting, escaping helpers
 │       └── style.css           # Design system
+├── scripts/                    # Deploy + live-call tooling (Studio Next)
 ├── tests/
+│   ├── genlayer_stub.py        # Stdlib stub of the genlayer package (v2 suite)
+│   ├── test_task_evaluator_v2.py  # 26 stub-based tests (v2 features + v1 regressions)
 │   └── direct/                 # Fast in-process tests (mocked LLM, no Studio)
 │       ├── conftest.py
 │       └── test_task_evaluator.py
@@ -198,7 +214,10 @@ genlayer-freelance-evaluator/
 ├── requirements.txt            # genlayer-test, genvm-linter
 ├── pyproject.toml
 ├── LICENSE                     # MIT
-└── README.md
+├── README.md
+├── DIFF.md                     # Full v1 → v2.0.0 changelog
+├── ONCHAIN_PROOF.md            # Live deployment + demo transactions
+└── SUBMISSION.md               # Milestone submission text
 ```
 
 ---
@@ -209,10 +228,12 @@ genlayer-freelance-evaluator/
 
 | Method | Signature | Description |
 | :--- | :--- | :--- |
-| `create_task` | `(title: str, requirements: str) -> str` | Publish a brief. Returns the task id (`task-000001`). |
+| `create_task` | `(title: str, requirements: str, rubric_weights: str = "") -> str` | Publish a brief. Optional per-task rubric weights (JSON, sum 100). Returns the task id (`task-000001`). |
 | `submit_work` | `(task_id: str, content: str) -> str` | Deliver text or a URL. Returns the submission id (`sub-000001`). |
 | `evaluate_submission` | `(submission_id: str) -> dict` | Run the AI review through consensus and persist the verdict. |
 | `set_task_open` | `(task_id: str, is_open: bool) -> None` | Open or close a task (client only). |
+| `revise_submission` | `(submission_id: str, content: str) -> dict` | Revise a pending or failed submission (max 5 revisions, history kept on chain). |
+| `request_reevaluation` | `(submission_id: str) -> dict` | One on-chain appeal per submission; re-runs consensus, keeps the old score. |
 
 ### View methods
 
@@ -227,6 +248,8 @@ genlayer-freelance-evaluator/
 | `get_freelancer_submissions` | `(freelancer: str) -> list` | All submissions of one freelancer address. |
 | `get_last_task_id` | `() -> str` | Id of the most recently created task. |
 | `get_last_submission_id` | `() -> str` | Id of the most recently created submission. |
+| `get_submission_revisions` | `(submission_id: str) -> list` | Revision history of a submission, oldest first. |
+| `get_freelancer_stats` | `(freelancer: str) -> dict` | Freelancer scorecard: totals, pass rate, average and best score. |
 
 ### Stored data
 
@@ -301,7 +324,7 @@ Expected output:
 ✓ Lint passed (3 checks)
 ✓ Validation passed
   Contract: TaskEvaluator
-  Methods: 13 (9 view, 4 write)
+  Methods: 17 (11 view, 6 write)
 ```
 
 ### 4. Run the test suite
@@ -318,6 +341,22 @@ Expected output:
 ```
 15 passed
 ```
+
+The v2 stub-based suite (26 tests, no Studio needed) runs the same way:
+
+```bash
+pytest tests/test_task_evaluator_v2.py -q
+```
+
+Expected output:
+
+```
+26 passed
+```
+
+It covers the v2 features (configurable rubrics, revisions, re-evaluation,
+the hardened validator, freelancer stats) plus v1 regressions; the 15
+direct-mode v1 tests above are retained unchanged.
 
 The suite covers task creation and validation, submission rules (one submission per
 freelancer, closed tasks, URL detection), the evaluation result, permission checks
@@ -420,20 +459,21 @@ npm run preview   # serve the production bundle locally
 
 ## Deployed contract address
 
-> **Status: not deployed from this repository yet.**
-> Add the address of your own deployment below and the frontend will pick it up
-> through `VITE_CONTRACT_ADDRESS`.
+> **Status: v2.0.0 deployed on Studio Next (chain 61997).**
+> Deploy transaction: [`0x3be46c874a072a65cefb70c45b212b7bd35d7bd6f6b03d8c4f9d96668729df15`](https://explorer-studio-dev.genlayer.com/tx/0x3be46c874a072a65cefb70c45b212b7bd35d7bd6f6b03d8c4f9d96668729df15).
+> Full demo transcript with all transactions: [ONCHAIN_PROOF.md](ONCHAIN_PROOF.md).
 
 | Network | Contract address |
 | :--- | :--- |
+| Studio Next (chain 61997) | [`0x40c416d29c7Bb1E5Ec3c79d520F17277aD70E212`](https://explorer-studio-dev.genlayer.com/address/0x40c416d29c7Bb1E5Ec3c79d520F17277aD70E212) |
 | GenLayer Studionet | `0x0000000000000000000000000000000000000000` *(placeholder — not deployed)* |
 | GenLayer localnet | `0x0000000000000000000000000000000000000000` *(placeholder — not deployed)* |
 | Testnet Bradbury | `0x0000000000000000000000000000000000000000` *(placeholder — not deployed)* |
 
 ```bash
-# After deploying, point the frontend at the new address:
+# Point the frontend at the deployed v2.0.0 contract:
 cd frontend
-echo "VITE_CONTRACT_ADDRESS=0xYourDeployedContractAddress" > .env
+echo "VITE_CONTRACT_ADDRESS=0x40c416d29c7Bb1E5Ec3c79d520F17277aD70E212" > .env
 npm run dev
 ```
 
@@ -464,13 +504,13 @@ following protections are built in:
 
 ## Limitations & roadmap
 
-* Submissions are final once created; revisions are not supported yet.
+* ~~Submissions are final once created; revisions are not supported yet.~~ **DONE in v2.0.0** — `revise_submission` (max 5 revisions, full history on chain).
 * A URL submission is fetched at evaluation time, so a page that changes afterwards
   is graded on its current content. Submit text for immutable deliverables.
-* The rubric weights are defined in the prompt; making them configurable per task
-  is a natural next step.
-* Appeals are handled by the GenLayer protocol itself (transaction appeal) rather
-  than by the contract.
+* ~~The rubric weights are defined in the prompt; making them configurable per task
+  is a natural next step.~~ **DONE in v2.0.0** — per-task `rubric_weights` in `create_task`.
+* ~~Appeals are handled by the GenLayer protocol itself (transaction appeal) rather
+  than by the contract.~~ **DONE in v2.0.0** — `request_reevaluation`, one on-chain appeal per submission.
 
 ---
 
